@@ -1,0 +1,10 @@
+add "desde archivo de text-1"
+add "desde archivo de text-2"
+add "desde archivo de text-3"
+add "desde archivo de text-4"
+add "desde archivo de text-5"
+add "desde archivo de text-6"
+add "desde archivo de text-7"
+add "desde archivo de text-8"
+add "desde archivo de text-9"
+list
