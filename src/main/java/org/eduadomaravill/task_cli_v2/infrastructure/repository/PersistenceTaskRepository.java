@@ -174,4 +174,5 @@ public class PersistenceTaskRepository {
     private interface TaskUpdater {
         void update(TaskEntity task);
     }
+
 }
