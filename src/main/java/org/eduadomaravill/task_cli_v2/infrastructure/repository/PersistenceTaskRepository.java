@@ -4,12 +4,14 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.eduadomaravill.task_cli_v2.domain.model.StatusTask;
 import org.eduadomaravill.task_cli_v2.infrastructure.entity.TaskEntity;
+import org.jline.terminal.Terminal;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.time.LocalDateTime;
 import java.util.*;
 
@@ -20,6 +22,7 @@ import java.util.*;
 @Component
 public class PersistenceTaskRepository {
 
+    private final Terminal terminal;
     private final String filePath;
     private static final String FILE_NAME = "tasks.json";
     private final ObjectMapper objectMapper;
@@ -31,9 +34,10 @@ public class PersistenceTaskRepository {
      * @param filePath     Path to the directory where the tasks.json file will be stored.
      */
     @Autowired
-    public PersistenceTaskRepository(ObjectMapper objectMapper, @Value("${task-cli.save.task.path}") String filePath) {
+    public PersistenceTaskRepository(ObjectMapper objectMapper, @Value("${task-cli.save.task.path}") String filePath, Terminal terminal) {
         this.objectMapper = objectMapper;
         this.filePath = filePath;
+        this.terminal = terminal;
     }
 
     /**
@@ -57,13 +61,23 @@ public class PersistenceTaskRepository {
      */
     public List<TaskEntity> getAllTasks() {
         File file = new File(filePath, FILE_NAME);
-        if (!file.exists()) {
+
+        if (!file.exists() || file.length() == 0) {
             return Collections.emptyList();
         }
+
         try {
-            return objectMapper.readValue(file, new TypeReference<>() {});
+            String content = Files.readString(file.toPath()).trim();
+
+            if (content.isEmpty() || "[{}]".equals(content)) {
+                return Collections.emptyList();
+            }
+            List<TaskEntity> tasks = objectMapper.readValue(file, new TypeReference<>() {});
+            return tasks.stream()
+                    .filter(task -> task.getIdTaskEntity() != null).toList();
+
         } catch (IOException e) {
-            e.printStackTrace();
+            terminal.writer().println("Error reading: "+ e.getLocalizedMessage());
             return Collections.emptyList();
         }
     }
@@ -121,14 +135,15 @@ public class PersistenceTaskRepository {
     private boolean saveToFile(List<TaskEntity> tasks) {
         File directory = new File(filePath);
         if (!directory.exists() && !directory.mkdirs()) {
-            System.err.println("Failed to create directory: " + directory.getPath());
+            terminal.writer().println("Failed to create directory: " + directory.getPath());
             return false;
         }
         try {
-            objectMapper.writeValue(new File(directory, FILE_NAME), tasks);
+            File file = new File(directory,FILE_NAME);
+            objectMapper.writeValue(file, tasks);
             return true;
         } catch (IOException e) {
-            e.printStackTrace();
+            terminal.writer().println("Failed to write: "+ e.getLocalizedMessage());
             return false;
         }
     }
