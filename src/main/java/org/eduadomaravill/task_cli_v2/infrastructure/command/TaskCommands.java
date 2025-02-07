@@ -22,8 +22,8 @@ import java.util.Optional;
 @ShellComponent
 public class TaskCommands {
 
+    private static final String PATTERN_PRINT_TASK = "| %-12s: %-25s |";
     private final TaskService taskService;
-    private final Terminal terminal;
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("MM/dd/yyyy hh:mm:ss a");
     private static final String ERROR_MESSAGE = "Error: invalid arguments provided.";
 
@@ -36,8 +36,7 @@ public class TaskCommands {
     @Autowired
     public TaskCommands(TaskService taskService, @Value("${task-cli.save.task.path}") String filePath,Terminal terminal) {
         this.taskService = taskService;
-        this.terminal = terminal;
-        this.terminal.writer().println("-----------------------------------------🖋️¡WELCOME TASK CLI!🖋️-----------------------------------------");
+        terminal.writer().println("-----------------------------------------🖋️¡WELCOME TASK CLI!🖋️-----------------------------------------");
     }
 
     /**
@@ -64,7 +63,7 @@ public class TaskCommands {
         }
         Optional<Task> taskOptional = taskService.createTask(arg);
         return taskOptional.map(task -> "----------Task Added Successfully----------\n" + printTask(task) +
-                "-------------------------------------------").orElse("Task could not be created.");
+                "-".repeat(43)).orElse("Task could not be created.");
     }
 
     /**
@@ -81,7 +80,7 @@ public class TaskCommands {
         }
         Optional<Task> taskOptional = taskService.getTaskById(arg);
         return taskOptional.map(task -> "-----------------Task Found----------------\n" + printTask(task) +
-                "-------------------------------------------").orElse("Task not found.");
+                "-".repeat(43)).orElse("Task not found.");
     }
 
     /**
@@ -132,7 +131,7 @@ public class TaskCommands {
         Optional<Task> taskOptional = taskService.updateTaskByDescription(arg, description);
 
         return taskOptional.map(task -> "---------Task Updated Successfully---------\n" + printTask(task) +
-                "-------------------------------------------").orElse("Task not found or could not be updated.");
+                "-".repeat(43)).orElse("Task not found or could not be updated.");
     }
 
     /**
@@ -148,7 +147,8 @@ public class TaskCommands {
             return errorExtraArgument();
         }
         Optional<Task> taskOptional = taskService.updateTaskByStatus(arg, StatusTask.DONE);
-        return taskOptional.map(task -> "------Task Marked as Done Successfully-----\n" + printTask(task) + "-------------------------------------------").orElse("Task not found or could not be updated.");
+        return taskOptional.map(task -> "------Task Marked as Done Successfully-----\n" + printTask(task) +
+                "-".repeat(43)).orElse("Task not found or could not be updated.");
     }
 
     /**
@@ -165,7 +165,7 @@ public class TaskCommands {
         }
         Optional<Task> taskOptional = taskService.updateTaskByStatus(arg, StatusTask.IN_PROGRESS);
         return taskOptional.map(task -> "--Task Marked as In Progress Successfully--\n" + printTask(task) +
-                "-------------------------------------------").orElse("Task not found or could not be marked as in progress.");
+                "-".repeat(43)).orElse("Task not found or could not be marked as in progress.");
     }
 
     /**
@@ -179,15 +179,15 @@ public class TaskCommands {
         String formattedUpdatedAt = task.getUpdatedAt().format(FORMATTER);
         String description = justifyText(task.getDescriptionTask());
         return "===========================================" + "\n" +
-                String.format("| %-12s: %-25s |", "ID", task.getIdTask()) +
+                String.format(PATTERN_PRINT_TASK, "ID", task.getIdTask()) +
                 "\n" +
                 "| Description : " + description  +
                 "\n" +
-                String.format("| %-12s: %-25s |", "Status", task.getStatusTask().getLabel()) +
+                String.format(PATTERN_PRINT_TASK, "Status", task.getStatusTask().getLabel()) +
                 "\n" +
-                String.format("| %-12s: %-25s |", "Created At", formattedCreatedAt) +
+                String.format(PATTERN_PRINT_TASK, "Created At", formattedCreatedAt) +
                 "\n" +
-                String.format("| %-12s: %-25s |", "Updated At", formattedUpdatedAt) +
+                String.format(PATTERN_PRINT_TASK, "Updated At", formattedUpdatedAt) +
                 "\n" +
                 "===========================================" +
                 "\n";
@@ -206,7 +206,7 @@ public class TaskCommands {
             justifiedText.append(" |\n");
             for (int i = 25; i < text.length(); i += 25) {
                 int end = Math.min(i + 25, text.length());
-                justifiedText.append(String.format("| %-12s: %-25s |"," ",text.substring(i,end)));
+                justifiedText.append(String.format(PATTERN_PRINT_TASK," ",text.substring(i,end)));
                 justifiedText.append("\n");
             }
         }else{

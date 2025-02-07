@@ -7,9 +7,9 @@ import org.eduadomaravill.task_cli_v2.domain.exception.InvalidStatusException;
 public enum StatusTask {
     /**
      * The task has not been started yet.
-     * This status is represented by the integer value 1 and the label 'todo'.
+     * This status is represented by the integer value 1 and the label "todo".
      */
-    TODO(1, "todo"),
+    NOT_STARTED(1, "todo"),
 
     /**
      * The task is currently in progress.

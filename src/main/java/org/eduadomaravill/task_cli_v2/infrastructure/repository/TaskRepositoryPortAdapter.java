@@ -41,7 +41,7 @@ public class TaskRepositoryPortAdapter implements ITaskRepositoryPort {
     public Optional<Task> createTask(String descriptionTask) {
         Task task = new Task();
         task.setDescriptionTask(descriptionTask);
-        task.setStatusTask(StatusTask.TODO);
+        task.setStatusTask(StatusTask.NOT_STARTED);
         task.setCreatedAt(LocalDateTime.now());
         task.setUpdatedAt(LocalDateTime.now());
         Optional<TaskEntity> newTask = persistenceTaskRepository.createTask(TaskEntity.taskEntityFromDomainModel(task));
