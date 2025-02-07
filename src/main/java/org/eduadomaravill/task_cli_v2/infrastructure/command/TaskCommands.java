@@ -25,7 +25,7 @@ public class TaskCommands {
     private final TaskService taskService;
     private final Terminal terminal;
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("MM/dd/yyyy hh:mm:ss a");
-    private static final String ERROR_MESSAGE = "Error: Extra arguments provided.";
+    private static final String ERROR_MESSAGE = "Error: invalid arguments provided.";
 
     /**
      * Constructs a TaskCommands component.
@@ -37,7 +37,7 @@ public class TaskCommands {
     public TaskCommands(TaskService taskService, @Value("${task-cli.save.task.path}") String filePath,Terminal terminal) {
         this.taskService = taskService;
         this.terminal = terminal;
-        terminal.writer().println("-----------------------------------------🖋️¡WELCOME TASK CLI!🖋️-----------------------------------------");
+        this.terminal.writer().println("-----------------------------------------🖋️¡WELCOME TASK CLI!🖋️-----------------------------------------");
     }
 
     /**
@@ -45,9 +45,9 @@ public class TaskCommands {
      *
      * @return A greeting message.
      */
-    @ShellMethod(key = "greeting", value = "Gets the greeting")
+    @ShellMethod(key = "greet", value = "Gets the greeting")
     public String helloWorld() {
-        return "Hello, Welcome to Task Cli!";
+        return "\n\n\t🔥🔥🔥 ¡Hello, Welcome to Task Cli! 🔥🔥🔥\n\n";
     }
 
     /**
@@ -63,8 +63,8 @@ public class TaskCommands {
             return errorExtraArgument();
         }
         Optional<Task> taskOptional = taskService.createTask(arg);
-        return taskOptional.map(task -> "----Task Added Successfully----\n" + printTask(task) +
-                "-------------------------------").orElse("Task could not be created.");
+        return taskOptional.map(task -> "----------Task Added Successfully----------\n" + printTask(task) +
+                "-------------------------------------------").orElse("Task could not be created.");
     }
 
     /**
@@ -80,8 +80,8 @@ public class TaskCommands {
             return errorExtraArgument();
         }
         Optional<Task> taskOptional = taskService.getTaskById(arg);
-        return taskOptional.map(task -> "----------Task Found-----------\n" + printTask(task) +
-                "-------------------------------").orElse("Task not found.");
+        return taskOptional.map(task -> "-----------------Task Found----------------\n" + printTask(task) +
+                "-------------------------------------------").orElse("Task not found.");
     }
 
     /**
@@ -92,15 +92,12 @@ public class TaskCommands {
      */
     @ShellMethod(key = "list", value = "List all tasks without or with status,\tExample: 'list' or 'list done' or 'list in-progress'")
     public String listTasks(@ShellOption(defaultValue = "all") String status) {
-        int marginLength = 121; // Longitud total de la línea
+        int marginLength = 126;
         StatusTask statusTask = status.equalsIgnoreCase("all") ? null : StatusTask.fromStatusLabel(status);
         List<Task> tasks = taskService.getAllTasks();
-
         if (statusTask != null) {
             tasks = tasks.stream().filter(task -> task.getStatusTask().equals(statusTask)).toList();
         }
-
-        // Centrar "Tasks List"
         String tasksListText = "Tasks List";
         int totalSpaces = marginLength - tasksListText.length() - 2;
         int leftSpaces = totalSpaces / 2;
@@ -124,18 +121,18 @@ public class TaskCommands {
         if (args != null && args.length > 0) {
             return errorExtraArgument();
         }
-        return taskService.deleteTask(arg) ? "----Task Deleted Successfully----" : "Task not found or could not be deleted.";
+        return taskService.deleteTask(arg) ? "\n\t----Task Deleted Successfully----\n" : "Task not found or could not be deleted.";
     }
 
     @ShellMethod(key = "update", value = "Update a task with ID,\tExample: update 2 \"Buy eggs\"")
     public String updateTask(@ShellOption(defaultValue = "0") Long arg, String description, String... args) {
-        if (args != null && args.length > 1) {
+        if (args != null && args.length > 1 || description == null) {
             return errorExtraArgument();
         }
         Optional<Task> taskOptional = taskService.updateTaskByDescription(arg, description);
 
-        return taskOptional.map(task -> "----Task Updated Successfully----\n" + printTask(task) +
-                "-------------------------------").orElse("Task not found or could not be updated.");
+        return taskOptional.map(task -> "---------Task Updated Successfully---------\n" + printTask(task) +
+                "-------------------------------------------").orElse("Task not found or could not be updated.");
     }
 
     /**
@@ -151,7 +148,7 @@ public class TaskCommands {
             return errorExtraArgument();
         }
         Optional<Task> taskOptional = taskService.updateTaskByStatus(arg, StatusTask.DONE);
-        return taskOptional.map(task -> "----Task Marked as Done Successfully----\n" + printTask(task) + "-------------------------------").orElse("Task not found or could not be updated.");
+        return taskOptional.map(task -> "------Task Marked as Done Successfully-----\n" + printTask(task) + "-------------------------------------------").orElse("Task not found or could not be updated.");
     }
 
     /**
@@ -167,8 +164,8 @@ public class TaskCommands {
             return errorExtraArgument();
         }
         Optional<Task> taskOptional = taskService.updateTaskByStatus(arg, StatusTask.IN_PROGRESS);
-        return taskOptional.map(task -> "----Task Marked as In Progress Successfully----\n" + printTask(task) +
-                "-------------------------------").orElse("Task not found or could not be marked as in progress.");
+        return taskOptional.map(task -> "--Task Marked as In Progress Successfully--\n" + printTask(task) +
+                "-------------------------------------------").orElse("Task not found or could not be marked as in progress.");
     }
 
     /**
@@ -180,19 +177,42 @@ public class TaskCommands {
     private String printTask(Task task) {
         String formattedCreatedAt = task.getCreatedAt().format(FORMATTER);
         String formattedUpdatedAt = task.getUpdatedAt().format(FORMATTER);
-        return "=====================================" + "\n" +
-                String.format("| %-12s: %s", "ID", task.getIdTask()) +
+        String description = justifyText(task.getDescriptionTask());
+        return "===========================================" + "\n" +
+                String.format("| %-12s: %-25s |", "ID", task.getIdTask()) +
                 "\n" +
-                String.format("| %-12s: %s", "Description", task.getDescriptionTask()) +
+                "| Description : " + description  +
                 "\n" +
-                String.format("| %-12s: %s", "Status", task.getStatusTask().getLabel()) +
+                String.format("| %-12s: %-25s |", "Status", task.getStatusTask().getLabel()) +
                 "\n" +
-                String.format("| %-12s: %s", "Created At", formattedCreatedAt) +
+                String.format("| %-12s: %-25s |", "Created At", formattedCreatedAt) +
                 "\n" +
-                String.format("| %-12s: %s", "Updated At", formattedUpdatedAt) +
+                String.format("| %-12s: %-25s |", "Updated At", formattedUpdatedAt) +
                 "\n" +
-                "=====================================" +
+                "===========================================" +
                 "\n";
+    }
+
+    /**
+     * Formats and prints description task
+     *
+     * @param text The description to be formatted.
+     * @return A formatted string representing the task details.
+     */
+    private String justifyText(String text) {
+        StringBuilder justifiedText = new StringBuilder();
+        if (text.length() > 25){
+            justifiedText.append(text, 0, 25);
+            justifiedText.append(" |\n");
+            for (int i = 25; i < text.length(); i += 25) {
+                int end = Math.min(i + 25, text.length());
+                justifiedText.append(String.format("| %-12s: %-25s |"," ",text.substring(i,end)));
+                justifiedText.append("\n");
+            }
+        }else{
+            justifiedText.append(String.format("%-25s |",text));
+        }
+        return justifiedText.toString().trim();
     }
 
 
@@ -208,17 +228,17 @@ public class TaskCommands {
         int count = 1;
         sb.append("=".repeat(marginLength));
         sb.append("\n");
-        sb.append(String.format("|| %-3s | %-5s | %-20s | %-12s | %-30s | %-30s ||", "N°", "ID", "Description", "Status", "Created At", "Updated At"));
+        sb.append(String.format("|| %-3s | %-5s | %-25s | %-12s | %-30s | %-30s ||", "N°", "ID", "Description", "Status", "Created At", "Updated At"));
         sb.append("\n");
         sb.append("=".repeat(marginLength));
         sb.append("\n");
         for (Task task : tasks) {
             String formattedCreatedAt = task.getCreatedAt().format(FORMATTER);
             String formattedUpdatedAt = task.getUpdatedAt().format(FORMATTER);
-            sb.append(String.format("|| %-3s | %-5d | %-20s | %-12s | %-30s | %-30s ||",
+            sb.append(String.format("|| %-3s | %-5d | %-25s | %-12s | %-30s | %-30s ||",
                     count,
                     task.getIdTask(),
-                    task.getDescriptionTask().substring(0, Math.min(20, task.getDescriptionTask().length())),
+                    task.getDescriptionTask().substring(0, Math.min(25, task.getDescriptionTask().length())),
                     task.getStatusTask().getLabel(),
                     formattedCreatedAt,
                     formattedUpdatedAt
