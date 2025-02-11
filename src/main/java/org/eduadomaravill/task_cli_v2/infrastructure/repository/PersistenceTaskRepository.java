@@ -24,7 +24,7 @@ public class PersistenceTaskRepository {
 
     private final Terminal terminal;
     private final String filePath;
-    private static final String FILE_NAME = "tasks.json";
+    private static final String FILE_NAME = "tasks_cli.json";
     private final ObjectMapper objectMapper;
 
     /**
@@ -36,8 +36,28 @@ public class PersistenceTaskRepository {
     @Autowired
     public PersistenceTaskRepository(ObjectMapper objectMapper, @Value("${task-cli.save.task.path}") String filePath, Terminal terminal) {
         this.objectMapper = objectMapper;
-        this.filePath = filePath;
         this.terminal = terminal;
+        if (System.getProperty("os.name").toLowerCase().contains("window")) {
+            this.filePath = filePath + "\\task-cli\\data";
+        } else {
+            this.filePath = filePath + "/task-cli/data";
+        }
+        File createTaskFile = new File(this.filePath, FILE_NAME);
+        boolean successFile = false;
+        boolean successDirectory = false;
+        if (!createTaskFile.getParentFile().exists()) {
+            successDirectory = createTaskFile.getParentFile().mkdirs();
+        }
+        if (!createTaskFile.exists()) {
+            try {
+                successFile = createTaskFile.createNewFile();
+            } catch (IOException e) {
+                this.terminal.writer().println("Failed to create tasks_cli.json file: " + e.getMessage());
+            }
+        }
+        if (successFile && successDirectory) {
+            this.terminal.writer().println("Created tasks_cli.json file successfully");
+        }
     }
 
     /**
@@ -61,23 +81,22 @@ public class PersistenceTaskRepository {
      */
     public List<TaskEntity> getAllTasks() {
         File file = new File(filePath, FILE_NAME);
-
-        if (!file.exists() || file.length() == 0) {
-            return Collections.emptyList();
-        }
-
         try {
+            if (!file.exists() || file.length() == 0) {
+                return Collections.emptyList();
+            }
             String content = Files.readString(file.toPath()).trim();
 
             if (content.isEmpty() || "[{}]".equals(content)) {
                 return Collections.emptyList();
             }
-            List<TaskEntity> tasks = objectMapper.readValue(file, new TypeReference<>() {});
+            List<TaskEntity> tasks = objectMapper.readValue(file, new TypeReference<>() {
+            });
             return tasks.stream()
                     .filter(task -> task.getIdTaskEntity() != null).toList();
 
         } catch (IOException e) {
-            terminal.writer().println("Error reading: "+ e.getLocalizedMessage());
+            terminal.writer().println("Error reading: " + e.getLocalizedMessage());
             return Collections.emptyList();
         }
     }
@@ -139,11 +158,11 @@ public class PersistenceTaskRepository {
             return false;
         }
         try {
-            File file = new File(directory,FILE_NAME);
+            File file = new File(directory, FILE_NAME);
             objectMapper.writeValue(file, tasks);
             return true;
         } catch (IOException e) {
-            terminal.writer().println("Failed to write: "+ e.getLocalizedMessage());
+            terminal.writer().println("Failed to write: " + e.getLocalizedMessage());
             return false;
         }
     }
@@ -151,8 +170,8 @@ public class PersistenceTaskRepository {
     /**
      * Helper method to update a task and persist the changes.
      *
-     * @param idTask    The ID of the task to update.
-     * @param updater   A lambda function that applies changes to the task.
+     * @param idTask  The ID of the task to update.
+     * @param updater A lambda function that applies changes to the task.
      * @return An {@link Optional} containing the updated task, or empty if not found.
      */
     private Optional<TaskEntity> updateTask(Long idTask, TaskUpdater updater) {

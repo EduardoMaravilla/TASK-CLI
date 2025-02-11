@@ -1,0 +1,1 @@
+Main-Class: org.eduadomaravill.task_cli_v2.TaskCliApp
